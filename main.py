@@ -35,8 +35,11 @@ def detect_changes():
             )
         )
 
+try:
+    schedule.every(15).seconds.do(detect_changes)
 
-schedule.every(15).seconds.do(detect_changes)
+    while True:
+        schedule.run_pending()
 
-while True:
-    schedule.run_pending()
+except Exception as e:
+    print(f"An error occurred: {e}")
