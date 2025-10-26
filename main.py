@@ -1,19 +1,42 @@
 import asyncio
-import json
 
-import aiohttp
+import schedule
 
-with open('config.json', 'r') as f:
-    user_name = json.load(f).get("user-name")
-    passwd = json.load(f).get("password")
+from message import Message
+from qq_message_poster import QQMessagePoster
+from frp_detector import FrpDetector
+from type_definition import *
 
-async def main():
-    url = "https://frp.pythagodzilla.top/api/proxy/tcp"
-    auth = aiohttp.BasicAuth("pythagodzilla", "@Jtbx2mtblj")
+frp_detector = FrpDetector()
 
-    async with aiohttp.ClientSession(auth=auth) as session:
-        async with session.get(url) as response:
-            if response.status == 200:
-                api_data = json.loads(await response.text())
+notification_person = "1670671958"
 
-asyncio.run(main())
+message_poster = QQMessagePoster()
+
+# message = Message()
+# asyncio.run(
+#     message_poster.send_private_message(user_id=notification_person, message=message)
+# )
+
+
+def detect_changes():
+    print("Start run")
+    changes = asyncio.run(frp_detector.compare_proxies())
+    if changes == {}:
+        return
+    else:
+        msg: str = "以下代理状态发生变化：\n"
+        for name, (old_status, new_status) in changes.items():
+            msg += f"{name}: {old_status} -> {new_status}\n"
+        message = Message(Text(text=msg))
+        asyncio.run(
+            message_poster.send_private_message(
+                user_id=notification_person, message=message
+            )
+        )
+
+
+schedule.every(15).seconds.do(detect_changes)
+
+while True:
+    schedule.run_pending()
