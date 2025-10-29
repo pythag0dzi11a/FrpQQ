@@ -6,7 +6,7 @@ from config import config
 from message import Message
 
 
-class QQMessagePoster:
+class MessageSender:
     def __init__(self):
         pass
 
