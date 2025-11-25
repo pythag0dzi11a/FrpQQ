@@ -1,18 +1,33 @@
 import asyncio
 import logging
-
+import hashlib
 import schedule
+import aiohttp
 
 from frp_detector import FrpDetector
 from message import Message
 from message_sender import MessageSender
 from type_definition import *
+from config import config
 
 frp_detector = FrpDetector()
 
 notification_person = "1670671958"
 
 msg_sender = MessageSender()
+
+
+async def webui_interaction():
+    uri = f"http://{config.napcat_server_addr}:{config}/api/auth/login"
+    hash_token = hashlib.sha256(
+        f"{config.webui_token}.napcat".encode()
+    ).hexdigest()  # 如果做指数退避，hash计算需要摘除。
+    async with aiohttp.ClientSession() as session:
+        async with session.post(uri, json={"hash": hash_token}) as resp:
+            if resp.status == 200:
+                return True
+            else:
+                return False
 
 
 def gen_msg(change_proxies: dict) -> Message:
@@ -37,7 +52,7 @@ async def detect_changes():
 
 
 try:
-    schedule.every(15).seconds.do(lambda :asyncio.run(detect_changes()))
+    schedule.every(15).seconds.do(lambda: asyncio.run(detect_changes()))
 
     while True:
         schedule.run_pending()

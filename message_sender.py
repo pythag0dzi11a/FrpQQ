@@ -7,12 +7,12 @@ from message import Message
 
 
 class MessageSender:
-    def __init__(self):
-        pass
+    def __init__(self, http_port: int = 3000, http_token: str = ""):
+        self._http_port = http_port
+        self._http_token = http_token
 
-    @staticmethod
-    async def send_private_message(message: Message, user_id: str):
-        url = f"http://{config.napcat_server_addr}:{config.http_server_port}/send_private_msg"
+    async def send_private_message(self, message: Message, user_id: str):
+        url = f"http://{config.napcat_server_addr}:{self._http_port}/send_private_msg"
 
         gen_message = message.to_list()
 

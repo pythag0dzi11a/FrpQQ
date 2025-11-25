@@ -8,10 +8,12 @@ class Config:
         "napcat_server_addr",
         "http_server_port",
         "ws_server_port",
+        "webui_port",
+        "webui_token",
     )
 
     def __init__(self):
-        with open('config.json', 'r') as f:
+        with open("config.json", "r") as f:
             __config = json.load(f)
 
             self.user_name = __config.get("user_name")
@@ -20,6 +22,8 @@ class Config:
             self.napcat_server_addr = __config.get("napcat_server_addr")
             self.http_server_port = __config.get("http_port")
             self.ws_server_port = __config.get("ws_port")
+            self.webui_port = __config.get("webui_port")
+            self.webui_token = __config.get("webui_token")
 
 
 config = Config()
