@@ -17,17 +17,22 @@ notification_person = "1670671958"
 msg_sender = MessageSender()
 
 
-async def webui_interaction():
-    uri = f"http://{config.napcat_server_addr}:{config}/api/auth/login"
-    hash_token = hashlib.sha256(
-        f"{config.webui_token}.napcat".encode()
-    ).hexdigest()  # 如果做指数退避，hash计算需要摘除。
-    async with aiohttp.ClientSession() as session:
-        async with session.post(uri, json={"hash": hash_token}) as resp:
-            if resp.status == 200:
-                return True
-            else:
-                return False
+class WebUIInteraction:
+    def __init__(self):
+        self.base_uri = f"http://{config.napcat_server_addr}:{config}"
+        self.hash_token = hashlib.sha256(
+            f"{config.webui_token}.napcat".encode()
+        ).hexdigest()  # 如果做指数退避，hash计算需要摘除。
+        self.header = {}
+
+    async def webui_interaction(self):
+        uri = self.base_uri + "/api/auth/login"
+        async with aiohttp.ClientSession() as session:
+            async with session.post(uri, json={"hash": self.hash_token}) as resp:
+                if resp.status == 200:
+                    return
+                else:
+                    return False
 
 
 def gen_msg(change_proxies: dict) -> Message:
