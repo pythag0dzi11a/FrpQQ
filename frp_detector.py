@@ -21,13 +21,17 @@ class FrpDetector:
     async def compare_proxies(self) -> dict:
 
         if self.first_init:
-            self.now_map = await self.format_proxies_list_to_dict(await self.get_proxies_list())  # 异步函数没法用lambda.
+            self.now_map = await self.format_proxies_list_to_dict(
+                await self.get_proxies_list()
+            )  # 异步函数没法用lambda.
             print("First init completed.")
             self.first_init = False
 
         self.old_map = self.now_map.copy()
 
-        self.now_map = await self.format_proxies_list_to_dict(await self.get_proxies_list())
+        self.now_map = await self.format_proxies_list_to_dict(
+            await self.get_proxies_list()
+        )
         print(self.now_map)
         print(self.old_map)
 
@@ -57,3 +61,41 @@ class FrpDetector:
                     proxies_list = []
         print(proxies_list)
         return proxies_list
+
+
+class FrpStatus:
+    def __init__(self, meta_data: dict):
+        self.__proxies_list = meta_data.get("proxies", [])
+        self.items = {}
+
+    def generate_items(self):
+        for proxy in self.__proxies_list:
+            name = proxy.get("name", "")
+            status = proxy.get("status", "")
+            start_time = proxy.get("last_start", "")
+            close_time = proxy.get("last_close", "")
+
+            self.items[name] = FrpItem(name, status, start_time, close_time)
+
+    def get_time(self, name: str):
+        item: FrpItem = self.items[name]  # 没有使用.get 可能导致些未知错误。
+        return {"start_time": item.start_time, "close_time": item.close_time}
+
+    def get_status(self, name: str) -> str:
+        item: FrpItem = self.items[name]
+        return item.status
+
+
+class FrpItem:
+    def __init__(self, name: str, status: str, start_time: str, close_time: str):
+        self.name = name
+        self.status = status
+        self.start_time = start_time
+        self.close_time = close_time
+
+        self.final_dict = {
+            "name": self.name,
+            "status": self.status,
+            "start_time": self.start_time,
+            "close_time": self.close_time,
+        }
