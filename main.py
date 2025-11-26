@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import hashlib
+# noinspection PyPackageRequirements
 import schedule
 import aiohttp
 

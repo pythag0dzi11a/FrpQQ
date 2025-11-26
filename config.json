@@ -1,9 +1,9 @@
 {
   "user_name": "pythagodzilla",
   "password": "@Jtbx2mtblj",
-  "napcat_server_addr": "127.0.0.1",
-  "webui_port": 8080,
-  "webui_token": "your_webui_token_here",
+  "napcat_server_addr": "192.168.0.85",
+  "webui_port": 6099,
+  "webui_token": "@Jtbx2mtblj",
 
   "http_port": 3000,
   "http_token": "",
