@@ -1,6 +1,8 @@
 import os.path
 import sqlite3
 
+from frp_detector import FrpStatus
+
 
 class DataBaseManager:
     def __init__(self):
@@ -25,5 +27,5 @@ class DataBaseManager:
         self.__connection.commit()
         self.__connection.close()
 
-    def insert_new_record(self, proxy_name: str, proxy_type: str, proxy_status: str, last_start: str, last_close: str, proxy_port: str):
-        self.__connection.execute()
+    def insert_new_record(self, data: FrpStatus):
+        pass

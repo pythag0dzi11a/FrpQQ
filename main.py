@@ -1,15 +1,15 @@
 import asyncio
-import logging
 import hashlib
+import logging
+
+import aiohttp
 # noinspection PyPackageRequirements
 import schedule
-import aiohttp
 
-from frp_detector import FrpDetector
-from message import Message
-from message_sender import MessageSender
-from type_definition import *
 from config import config
+from frp_detector import FrpDetector
+from message import Message, Text
+from message_sender import MessageSender
 
 frp_detector = FrpDetector()
 
@@ -20,18 +20,20 @@ msg_sender = MessageSender()
 
 class WebUIInteraction:
     def __init__(self):
+        # noinspection HttpUrlsUsage
         self.base_uri = f"http://{config.napcat_server_addr}:{config}"
         self.hash_token = hashlib.sha256(
             f"{config.webui_token}.napcat".encode()
         ).hexdigest()  # 如果做指数退避，hash计算需要摘除。
         self.header = {}
 
-    async def webui_interaction(self):
+    async def webui_login(self) -> bool:
         uri = self.base_uri + "/api/auth/login"
         async with aiohttp.ClientSession() as session:
             async with session.post(uri, json={"hash": self.hash_token}) as resp:
                 if resp.status == 200:
-                    return
+                    self.header = {"Authorization": f"Bearer {await resp.text()}"}
+                    return True
                 else:
                     return False
 

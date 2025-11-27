@@ -12,6 +12,7 @@ class MessageSender:
         self._http_token = http_token
 
     async def send_private_message(self, message: Message, user_id: str):
+        # noinspection HttpUrlsUsage
         url = f"http://{config.napcat_server_addr}:{self._http_port}/send_private_msg"
 
         gen_message = message.to_list()

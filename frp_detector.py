@@ -6,87 +6,39 @@ import aiohttp
 from config import config
 
 
-# class FrpDetector:
-#     def __init__(self):
-#         self.__first_init = True
-#         self.old_map = {}
-#         self.now_map = {}
-#
-#         self.past_proxies_list = []
-#         self.now_proxies_list = []
-#
-#     @staticmethod
-#     async def format_proxies_list_to_dict(data: list) -> dict:
-#         return {item.get("name"): item.get("status") for item in data}
-#
-#     async def compare_proxies(self) -> dict:
-#
-#         if self.__first_init:
-#             self.now_map = await self.format_proxies_list_to_dict(
-#                 await self.get_proxies_list()
-#             )  # 异步函数没法用lambda.
-#             print("First init completed.")
-#             self.__first_init = False
-#
-#         self.old_map = self.now_map.copy()
-#
-#         self.now_map = await self.format_proxies_list_to_dict(
-#             await self.get_proxies_list()
-#         )
-#         print(self.now_map)
-#         print(self.old_map)
-#
-#         changes = {}
-#         for name, now_status in self.now_map.items():
-#             old_status = self.old_map.get(name)
-#
-#             if now_status != old_status:
-#                 changes[name] = (old_status, now_status)
-#
-#         print(changes)
-#         return changes
-#
-#     @staticmethod
-#     async def get_proxies_list() -> list:
-#         url = "https://frp.pythagodzilla.top/api/proxy/tcp"
-#         auth = aiohttp.BasicAuth(config.user_name, config.password)
-#
-#         async with aiohttp.ClientSession(auth=auth) as session:
-#             async with session.get(url) as response:
-#                 if response.status == 200:
-#                     api_data = json.loads(await response.text())
-#                     proxies_list = api_data.get("proxies")
-#                     print(proxies_list[0].get("status"))
-#                 else:
-#                     proxies_list = []
-#         print(proxies_list)
-#         return proxies_list
-
 class FrpStatus:
+    """
+    FRP状态类，包含多个FRP代理的状态信息。
+    Attributes:
+        all_items (dict): 包含FRP代理名称和对应FrpItem对象的字典。
+    Methods:
+        generate_items(): 根据传入的元数据生成FrpItem对象并存储在items字典中。
+        get_time(name: str): 获取指定代理的启动和关闭时间。
+        get_status(name: str): 获取指定代理的当前状态。
+    """
+
     def __init__(self, meta_data: dict):
         self.__proxies_list = meta_data.get("proxies", [])
-        self.items = {}
-        self.generate_items()
+        self.all_items = {}
+        self._generate_items()
 
-    def generate_items(self):
+    def _generate_items(self):
         for proxy in self.__proxies_list:
             name = proxy.get("name", "")
             status = proxy.get("status", "")
             start_time = proxy.get("last_start", "")
             close_time = proxy.get("last_close", "")
 
-            self.items[name] = FrpItem(name, status, start_time, close_time)
-
-    # def traversal_status(self):
-    #     for name, item in self.items.items():
-    #         yield {"name": name, "status": item.status}
+            self.all_items[name] = FrpItem(name, status, start_time, close_time)
 
     def get_time(self, name: str):
-        item: FrpItem = self.items[name]  # 没有使用.get 可能导致些未知错误。
+        item: FrpItem = self.all_items[name]  # 没有使用.get 可能导致些未知错误。
+        print(f"Fetching {name} time.")
         return {"start_time": item.start_time, "close_time": item.close_time}
 
     def get_status(self, name: str) -> str:
-        item: FrpItem = self.items[name]
+        item: FrpItem = self.all_items[name]
+        print(f"Fetching {name} status.")
         return item.status
 
 
@@ -150,22 +102,24 @@ class FrpDetector:
         :return: 包含状态变化代理信息的字典，格式为 {代理名称: {"old_status": 旧状态, "new_status": 新状态, "check_time": 检查时间}}。
         """
         if not self.old_status:
-            self.old_status = await self.get_tcp_status()
+            self.old_status: FrpStatus | None = await self.get_tcp_status()
             print("First initialization of FRP status.")
             return {}
         else:
-            new_status = await self.get_tcp_status()
+            new_status: FrpStatus | None = await self.get_tcp_status()
             diff = {}
             if not new_status:
                 print("Failed to fetch new FRP status.")
                 return {}
 
             else:
-                for name, status in self.old_status.items.items():
-                    if new_status.get_status(name) != status.status:
+                for name, frpItem in self.old_status.all_items:
+                    if new_status.get_status(name) != frpItem.status:
                         diff[name] = {
-                            "old_status": status.status,
+                            "old_status": frpItem.status,
                             "new_status": new_status.get_status(name),
                             "check_time": datetime.datetime.now()
                         }
+                print(f"Differences found: {diff}")
+                self.old_status = new_status
                 return diff
