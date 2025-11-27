@@ -1,58 +1,37 @@
 import asyncio
-import hashlib
 import logging
 
-import aiohttp
 # noinspection PyPackageRequirements
 import schedule
 
-from config import config
-from frp_detector import FrpDetector
+from frp_detector import FrpDetector, FrpDifference
 from message import Message, Text
 from message_sender import MessageSender
 
-frp_detector = FrpDetector()
-
+# Configuration part
+frp_detector = asyncio.run(FrpDetector.create())
 notification_person = "1670671958"
-
 msg_sender = MessageSender()
 
 
-class WebUIInteraction:
-    def __init__(self):
-        # noinspection HttpUrlsUsage
-        self.base_uri = f"http://{config.napcat_server_addr}:{config}"
-        self.hash_token = hashlib.sha256(
-            f"{config.webui_token}.napcat".encode()
-        ).hexdigest()  # 如果做指数退避，hash计算需要摘除。
-        self.header = {}
-
-    async def webui_login(self) -> bool:
-        uri = self.base_uri + "/api/auth/login"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(uri, json={"hash": self.hash_token}) as resp:
-                if resp.status == 200:
-                    self.header = {"Authorization": f"Bearer {await resp.text()}"}
-                    return True
-                else:
-                    return False
-
-
-def gen_msg(change_proxies: dict) -> Message:
+def gen_msg(change_proxies: FrpDifference) -> Message:
     msg: str = "以下代理状态发生变化：\n"
-    for name, (old_status, new_status) in change_proxies.items():
-        msg += f"{name}: {"在线" if old_status == "online" else "离线"}->{"在线" if new_status == "online" else "离线"}\n"
+    for name, item in change_proxies.all_diffs.items():
+        if item.is_new:
+            msg += f"{name}: 新增代理，当前状态：{'在线' if item.new_status == 'online' else '离线'}\n"
+        else:
+            msg += f"{name}: {'在线' if item.old_status == 'online' else '离线'}->{'在线' if item.new_status == 'online' else '离线'}\n"
 
     return Message(Text(text=msg))
 
 
 async def detect_changes():
-    print("Start run")
-    changes_dict = await frp_detector.compare_proxies()
-    if not changes_dict:
+    print("Start detect changes.")
+    changes: FrpDifference = await frp_detector.compare_diff()
+    if not changes.all_diffs:
         return
     else:
-        message = gen_msg(changes_dict)
+        message = gen_msg(changes)
 
         await msg_sender.send_private_message(
             user_id=notification_person, message=message
