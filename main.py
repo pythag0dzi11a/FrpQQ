@@ -11,7 +11,7 @@ from message_sender import MessageSender
 # Configuration part
 frp_detector = asyncio.run(FrpDetector.create())
 notification_person = "1670671958"
-msg_sender = MessageSender()
+msg_sender = asyncio.run(MessageSender.create())
 
 
 def gen_msg(change_proxies: FrpDifference) -> Message:
