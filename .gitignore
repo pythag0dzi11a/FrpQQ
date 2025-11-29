@@ -1,1 +1,11 @@
+# Local configuration file
 config.json
+
+# Database file
+data.db
+
+# Python cache
+__pycache__/
+
+# Temporary files
+temp.json
